@@ -43,7 +43,13 @@ function initDatabase() {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 serial_number TEXT UNIQUE NOT NULL,
-                location TEXT NOT NULL,
+                location TEXT,
+                address TEXT,
+                postal_code TEXT,
+                phone TEXT,
+                client_name TEXT,
+                brand TEXT,
+                description TEXT,
                 installation_date DATE,
                 last_maintenance DATE,
                 next_maintenance DATE,
@@ -325,6 +331,106 @@ app.get('/api/stats', authenticateToken, (req, res) => {
             });
         });
     });
+});
+
+// ============ IMPORT ROUTES ============
+
+// Convert Excel date serial to JS date
+function excelDateToJSDate(serial) {
+    if (!serial || serial === 1 || serial === 0) return null;
+    const utc_days = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400;
+    const date_info = new Date(utc_value * 1000);
+    const year = date_info.getFullYear();
+    const month = String(date_info.getMonth() + 1).padStart(2, '0');
+    const day = String(date_info.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Import equipment from Excel
+app.post('/api/import', authenticateToken, (req, res) => {
+    const XLSX = require('xlsx');
+    const fs = require('fs');
+    const path = require('path');
+
+    try {
+        const excelPath = path.join(__dirname, '..', 'Dados_Github_ma.xlsx');
+
+        if (!fs.existsSync(excelPath)) {
+            return res.status(404).json({ error: 'Excel file not found. Please place Dados_Github_ma.xlsx in the project folder.' });
+        }
+
+        const workbook = XLSX.readFile(excelPath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(sheet);
+
+        let imported = 0;
+        let skipped = 0;
+        let errors = [];
+
+        // Process in batches
+        const stmt = db.prepare(`
+            INSERT OR IGNORE INTO equipment (name, serial_number, location, address, postal_code, phone, client_name, brand, description, status, installation_date, observations)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        data.forEach((row, index) => {
+            try {
+                const serialNumber = (row.serie || '').trim();
+                const name = row.maquina || row.design || 'Unknown';
+                const location = row.local || '';
+                const address = row.morada || '';
+                const postalCode = row.codpost || '';
+                const phone = row.telefone || '';
+                const clientName = row.nome || '';
+                const brand = row.marca || '';
+                const description = row.design || '';
+                const status = row.situacao === 'em reparação' ? 'maintenance' :
+                               row.situacao === ' ' || !row.situacao ? 'active' : 'inactive';
+                const installationDate = excelDateToJSDate(row.instal);
+                const observations = row.obs || '';
+
+                if (serialNumber && serialNumber.length > 5) {
+                    stmt.run(name, serialNumber, location, address, postalCode, phone, clientName, brand, description, status, installationDate, observations, function(err) {
+                        if (err) {
+                            errors.push(`Row ${index + 2}: ${err.message}`);
+                        }
+                    });
+                    imported++;
+                } else {
+                    skipped++;
+                }
+            } catch (e) {
+                errors.push(`Row ${index + 2}: ${e.message}`);
+            }
+        });
+
+        stmt.finalize(() => {
+            res.json({
+                success: true,
+                message: `Importação concluída: ${imported} registados, ${skipped} ignorados`,
+                imported,
+                skipped,
+                errors: errors.slice(0, 10)
+            });
+        });
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({ error: 'Error importing data: ' + error.message });
+    }
+});
+
+// Check import status
+app.get('/api/import/status', authenticateToken, (req, res) => {
+    const excelPath = path.join(__dirname, '..', 'Dados_Github_ma.xlsx');
+    const fs = require('fs');
+
+    if (fs.existsSync(excelPath)) {
+        const stats = fs.statSync(excelPath);
+        res.json({ ready: true, path: excelPath, size: stats.size });
+    } else {
+        res.json({ ready: false });
+    }
 });
 
 // Start server

@@ -263,3 +263,37 @@ async function getStats() {
         return { totalEquipment: 0, pendingMaintenance: 0, completedMaintenance: 0, alerts: 0 };
     }
 }
+
+// ============ IMPORT FUNCTIONS ============
+
+async function importEquipment() {
+    try {
+        const response = await fetch(`${API_URL}/import`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.error };
+        }
+
+        return { success: true, message: data.message, imported: data.imported, skipped: data.skipped };
+    } catch (error) {
+        return { success: false, message: 'Erro de conexão' };
+    }
+}
+
+async function checkImportStatus() {
+    try {
+        const response = await fetch(`${API_URL}/import/status`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        return { ready: false };
+    }
+}

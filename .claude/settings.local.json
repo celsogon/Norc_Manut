@@ -24,7 +24,8 @@
       "Bash(npm install *)",
       "Bash(where node *)",
       "Read(//c/Program Files/**)",
-      "Bash(winget install *)"
+      "Bash(winget install *)",
+      "PowerShell(Copy-Item *)"
     ]
   }
 }
