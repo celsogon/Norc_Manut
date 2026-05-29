@@ -450,51 +450,78 @@ app.get('/api/import/status', authenticateToken, (req, res) => {
 
 // Get available columns from imported data
 app.get('/api/columns', authenticateToken, (req, res) => {
-    // Get one sample of extra_data to extract columns
-    db.get('SELECT extra_data FROM equipment WHERE extra_data IS NOT NULL AND extra_data != "{}" LIMIT 1', [], (err, row) => {
-        if (err || !row) {
-            // Return default columns
-            return res.json({
-                columns: [
-                    { key: 'name', label: 'Nome', default: true },
-                    { key: 'serial_number', label: 'Nº Série', default: true },
-                    { key: 'location', label: 'Localização', default: true },
-                    { key: 'client_name', label: 'Cliente', default: true },
-                    { key: 'brand', label: 'Marca', default: true },
-                    { key: 'status', label: 'Estado', default: true },
-                    { key: 'installation_date', label: 'Data Instalação', default: false }
-                ]
-            });
+    // Try to get columns from Excel file directly
+    const XLSX = require('xlsx');
+    const fs = require('fs');
+    const path = require('path');
+
+    const excelPath = path.join(__dirname, '..', 'Dados_Github_ma.xlsx');
+
+    if (!fs.existsSync(excelPath)) {
+        // Return default columns if no Excel file
+        return res.json({
+            columns: [
+                { key: 'name', label: 'Nome', default: true },
+                { key: 'serial_number', label: 'Nº Série', default: true },
+                { key: 'location', label: 'Localização', default: true },
+                { key: 'client_name', label: 'Cliente', default: true },
+                { key: 'brand', label: 'Marca', default: true },
+                { key: 'status', label: 'Estado', default: true },
+                { key: 'installation_date', label: 'Data Instalação', default: false }
+            ]
+        });
+    }
+
+    try {
+        const workbook = XLSX.readFile(excelPath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(sheet);
+
+        if (data.length === 0) {
+            return res.json({ columns: [] });
         }
 
-        try {
-            const extraData = JSON.parse(row.extra_data);
-            const extraColumns = Object.keys(extraData).map(key => ({
-                key: `extra_${key}`,
-                label: key,
-                default: false
-            }));
+        const allExcelColumns = Object.keys(data[0]);
 
-            res.json({
-                columns: [
-                    { key: 'name', label: 'Nome', default: true },
-                    { key: 'serial_number', label: 'Nº Série', default: true },
-                    { key: 'location', label: 'Localização', default: true },
-                    { key: 'client_name', label: 'Cliente', default: true },
-                    { key: 'brand', label: 'Marca', default: true },
-                    { key: 'status', label: 'Estado', default: true },
-                    { key: 'installation_date', label: 'Data Instalação', default: false },
-                    { key: 'address', label: 'Morada', default: false },
-                    { key: 'postal_code', label: 'Código Postal', default: false },
-                    { key: 'phone', label: 'Telefone', default: false },
-                    { key: 'description', label: 'Descrição', default: false },
-                    ...extraColumns
-                ]
-            });
-        } catch (e) {
-            res.json({ columns: [] });
-        }
-    });
+        // Build column list from Excel
+        const excelColumns = allExcelColumns.map(key => ({
+            key: `extra_${key}`,
+            label: key,
+            default: false
+        }));
+
+        res.json({
+            columns: [
+                { key: 'name', label: 'Nome', default: true },
+                { key: 'serial_number', label: 'Nº Série', default: true },
+                { key: 'location', label: 'Localização', default: true },
+                { key: 'client_name', label: 'Cliente (nome)', default: true },
+                { key: 'brand', label: 'Marca', default: true },
+                { key: 'status', label: 'Estado', default: true },
+                { key: 'installation_date', label: 'Data Instalação', default: false },
+                { key: 'address', label: 'Morada', default: false },
+                { key: 'postal_code', label: 'Código Postal', default: false },
+                { key: 'phone', label: 'Telefone', default: false },
+                { key: 'description', label: 'Descrição', default: false },
+                { key: 'extra_serie', label: 'Serie (Excel)', default: true },
+                { key: 'extra_local', label: 'Local (Excel)', default: true },
+                { key: 'extra_morada', label: 'Morada (Excel)', default: false },
+                { key: 'extra_codpost', label: 'CodPost (Excel)', default: false },
+                { key: 'extra_telefone', label: 'Telefone (Excel)', default: false },
+                { key: 'extra_nome', label: 'Nome Cliente (Excel)', default: false },
+                { key: 'extra_marca', label: 'Marca (Excel)', default: false },
+                { key: 'extra_design', label: 'Design (Excel)', default: false },
+                { key: 'extra_situacao', label: 'Situacao (Excel)', default: false },
+                { key: 'extra_zona', label: 'Zona (Excel)', default: false },
+                { key: 'extra_ref', label: 'Ref (Excel)', default: false },
+                { key: 'extra_email', label: 'Email (Excel)', default: false },
+                ...excelColumns
+            ]
+        });
+    } catch (error) {
+        console.error('Error reading columns:', error);
+        res.json({ columns: [] });
+    }
 });
 
 // Start server
