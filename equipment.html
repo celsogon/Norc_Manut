@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Norc_Manut - Equipamentos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #1a5276;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 20px;
+        }
+        .nav {
+            display: flex;
+            gap: 20px;
+        }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav a:hover, .nav a.active {
+            background: #154360;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-info span {
+            font-size: 14px;
+        }
+        .btn-logout {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-logout:hover {
+            background: #c0392b;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .page-header h2 {
+            color: #2c3e50;
+        }
+        .btn-add {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-add:hover {
+            background: #219a52;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.maintenance {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-edit, .btn-delete {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+        .btn-edit:hover {
+            background: #2980b9;
+        }
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #1a5276;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-save {
+            flex: 1;
+            background: #1a5276;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-save:hover {
+            background: #154360;
+        }
+        .btn-cancel {
+            flex: 1;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-cancel:hover {
+            background: #7f8c8d;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav">
+            <h1>Norcontrol, Lda - Manutenção</h1>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="equipment.html" class="active">Equipamentos</a>
+            <a href="maintenance.html">Manutenções</a>
+        </div>
+        <div class="user-info">
+            <span id="userName">Bem-vindo</span>
+            <button class="btn-logout" onclick="logout()">Sair</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>Equipamentos</h2>
+            <button class="btn-add" onclick="showAddModal()">+ Novo Equipamento</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Nº Série</th>
+                        <th>Localização</th>
+                        <th>Última Manutenção</th>
+                        <th>Próxima Manutenção</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="equipmentTable">
+                    <tr>
+                        <td colspan="7" class="empty-state">A carregar...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit Equipment -->
+    <div id="equipmentModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Novo Equipamento</h3>
+            <div id="message" class="message"></div>
+            <form id="equipmentForm">
+                <input type="hidden" id="equipmentId">
+                <div class="form-group">
+                    <label for="name">Nome do Equipamento</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="serialNumber">Número de Série</label>
+                    <input type="text" id="serialNumber" required>
+                </div>
+                <div class="form-group">
+                    <label for="location">Localização</label>
+                    <input type="text" id="location" required>
+                </div>
+                <div class="form-group">
+                    <label for="installationDate">Data de Instalação</label>
+                    <input type="date" id="installationDate">
+                </div>
+                <div class="form-group">
+                    <label for="nextMaintenance">Próxima Manutenção</label>
+                    <input type="date" id="nextMaintenance">
+                </div>
+                <div class="form-group">
+                    <label for="status">Estado</label>
+                    <select id="status">
+                        <option value="active">Ativo</option>
+                        <option value="maintenance">Em Manutenção</option>
+                        <option value="inactive">Inativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="observations">Observações</label>
+                    <textarea id="observations" rows="3"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-save">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        let equipmentList = [];
+
+        // Require authentication
+        if (!requireAuth()) {}
+
+        // Display user name
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = 'Bem-vindo, ' + user.username;
+        }
+
+        // Load equipment
+        async function loadEquipment() {
+            equipmentList = await getEquipment();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('equipmentTable');
+
+            if (equipmentList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum equipamento registado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = equipmentList.map(eq => `
+                <tr>
+                    <td>${eq.name}</td>
+                    <td>${eq.serial_number}</td>
+                    <td>${eq.location}</td>
+                    <td>${eq.last_maintenance || '-'}</td>
+                    <td>${eq.next_maintenance || '-'}</td>
+                    <td><span class="status ${eq.status}">${getStatusLabel(eq.status)}</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn-edit" onclick="editEquipment(${eq.id})">Editar</button>
+                            <button class="btn-delete" onclick="deleteEquipment(${eq.id})">Eliminar</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'active': 'Ativo',
+                'inactive': 'Inativo',
+                'maintenance': 'Em Manutenção'
+            };
+            return labels[status] || status;
+        }
+
+        function showAddModal() {
+            document.getElementById('modalTitle').textContent = 'Novo Equipamento';
+            document.getElementById('equipmentId').value = '';
+            document.getElementById('equipmentForm').reset();
+            document.getElementById('message').className = 'message';
+            document.getElementById('message').style.display = 'none';
+            document.getElementById('equipmentModal').classList.add('show');
+        }
+
+        function editEquipment(id) {
+            const eq = equipmentList.find(e => e.id === id);
+            if (!eq) return;
+
+            document.getElementById('modalTitle').textContent = 'Editar Equipamento';
+            document.getElementById('equipmentId').value = eq.id;
+            document.getElementById('name').value = eq.name;
+            document.getElementById('serialNumber').value = eq.serial_number;
+            document.getElementById('location').value = eq.location;
+            document.getElementById('installationDate').value = eq.installation_date || '';
+            document.getElementById('nextMaintenance').value = eq.next_maintenance || '';
+            document.getElementById('status').value = eq.status;
+            document.getElementById('observations').value = eq.observations || '';
+            document.getElementById('message').className = 'message';
+            document.getElementById('message').style.display = 'none';
+            document.getElementById('equipmentModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('equipmentModal').classList.remove('show');
+        }
+
+        // Handle form submission
+        document.getElementById('equipmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('equipmentId').value;
+            const equipment = {
+                name: document.getElementById('name').value,
+                serial_number: document.getElementById('serialNumber').value,
+                location: document.getElementById('location').value,
+                installation_date: document.getElementById('installationDate').value,
+                next_maintenance: document.getElementById('nextMaintenance').value,
+                status: document.getElementById('status').value,
+                observations: document.getElementById('observations').value
+            };
+
+            let result;
+            if (id) {
+                result = await updateEquipment(parseInt(id), equipment);
+            } else {
+                result = await createEquipment(equipment);
+            }
+
+            const messageDiv = document.getElementById('message');
+            if (result.success) {
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'message success';
+                setTimeout(() => {
+                    closeModal();
+                    loadEquipment();
+                }, 1000);
+            } else {
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'message error';
+            }
+        });
+
+        // Delete equipment
+        async function deleteEquipment(id) {
+            if (!confirm('Tem a certeza que deseja eliminar este equipamento?')) return;
+
+            const result = await deleteEquipment(id);
+            if (result.success) {
+                loadEquipment();
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // Close modal on outside click
+        document.getElementById('equipmentModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Initial load
+        loadEquipment();
+    </script>
+</body>
+</html>

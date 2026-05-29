@@ -25,6 +25,20 @@
         .header h1 {
             font-size: 20px;
         }
+        .nav {
+            display: flex;
+            gap: 20px;
+        }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav a:hover {
+            background: #154360;
+        }
         .user-info {
             display: flex;
             align-items: center;
@@ -90,11 +104,19 @@
             color: #7f8c8d;
             font-size: 14px;
         }
+        .card.alert .number {
+            color: #e74c3c;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Norcontrol, Lda - Manutenção</h1>
+        <div class="nav">
+            <h1>Norcontrol, Lda - Manutenção</h1>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="equipment.html">Equipamentos</a>
+            <a href="maintenance.html">Manutenções</a>
+        </div>
         <div class="user-info">
             <span id="userName">Bem-vindo</span>
             <button class="btn-logout" onclick="logout()">Sair</button>
@@ -104,28 +126,28 @@
     <div class="container">
         <div class="welcome">
             <h2>Dashboard</h2>
-            <p> Gestão de Equipamentos de Correção do Fator de Potência</p>
+            <p>Gestão de Equipamentos de Correção do Fator de Potência</p>
         </div>
 
         <div class="cards">
             <div class="card">
                 <h3>Equipamentos Total</h3>
-                <div class="number">0</div>
+                <div class="number" id="totalEquipment">-</div>
                 <div class="label">Registados no sistema</div>
             </div>
             <div class="card">
                 <h3>Manutenções Pendentes</h3>
-                <div class="number">0</div>
+                <div class="number" id="pendingMaintenance">-</div>
                 <div class="label">Aguardam intervenção</div>
             </div>
             <div class="card">
                 <h3>Manutenções Concluídas</h3>
-                <div class="number">0</div>
+                <div class="number" id="completedMaintenance">-</div>
                 <div class="label">Este mês</div>
             </div>
-            <div class="card">
+            <div class="card alert">
                 <h3>Alertas</h3>
-                <div class="number">0</div>
+                <div class="number" id="alerts">-</div>
                 <div class="label">Requerem atenção</div>
             </div>
         </div>
@@ -143,6 +165,17 @@
         if (user) {
             document.getElementById('userName').textContent = 'Bem-vindo, ' + user.username;
         }
+
+        // Load stats
+        async function loadStats() {
+            const stats = await getStats();
+            document.getElementById('totalEquipment').textContent = stats.totalEquipment;
+            document.getElementById('pendingMaintenance').textContent = stats.pendingMaintenance;
+            document.getElementById('completedMaintenance').textContent = stats.completedMaintenance;
+            document.getElementById('alerts').textContent = stats.alerts;
+        }
+
+        loadStats();
     </script>
 </body>
 </html>

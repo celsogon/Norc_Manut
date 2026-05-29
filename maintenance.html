@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Norc_Manut - Manutenções</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #1a5276;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 20px;
+        }
+        .nav {
+            display: flex;
+            gap: 20px;
+        }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav a:hover, .nav a.active {
+            background: #154360;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-info span {
+            font-size: 14px;
+        }
+        .btn-logout {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-logout:hover {
+            background: #c0392b;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .page-header h2 {
+            color: #2c3e50;
+        }
+        .btn-add {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-add:hover {
+            background: #219a52;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .cost {
+            color: #27ae60;
+            font-weight: 500;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #1a5276;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-save {
+            flex: 1;
+            background: #1a5276;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-save:hover {
+            background: #154360;
+        }
+        .btn-cancel {
+            flex: 1;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-cancel:hover {
+            background: #7f8c8d;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav">
+            <h1>Norcontrol, Lda - Manutenção</h1>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="equipment.html">Equipamentos</a>
+            <a href="maintenance.html" class="active">Manutenções</a>
+        </div>
+        <div class="user-info">
+            <span id="userName">Bem-vindo</span>
+            <button class="btn-logout" onclick="logout()">Sair</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>Registos de Manutenção</h2>
+            <button class="btn-add" onclick="showAddModal()">+ Nova Manutenção</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Equipamento</th>
+                        <th>Nº Série</th>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                        <th>Realizado por</th>
+                        <th>Custo</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="maintenanceTable">
+                    <tr>
+                        <td colspan="8" class="empty-state">A carregar...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for Add Maintenance -->
+    <div id="maintenanceModal" class="modal">
+        <div class="modal-content">
+            <h3>Nova Manutenção</h3>
+            <div id="message" class="message"></div>
+            <form id="maintenanceForm">
+                <div class="form-group">
+                    <label for="equipmentId">Equipamento</label>
+                    <select id="equipmentId" required>
+                        <option value="">Selecione um equipamento</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="maintenanceType">Tipo de Manutenção</label>
+                    <select id="maintenanceType" required>
+                        <option value="">Selecione o tipo</option>
+                        <option value="preventiva">Preventiva</option>
+                        <option value="corretiva">Corretiva</option>
+                        <option value="preditiva">Preditiva</option>
+                        <option value="inspeção">Inspeção</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="description">Descrição</label>
+                    <textarea id="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="performedBy">Realizado por</label>
+                    <input type="text" id="performedBy">
+                </div>
+                <div class="form-group">
+                    <label for="nextMaintenanceDate">Próxima Manutenção</label>
+                    <input type="date" id="nextMaintenanceDate">
+                </div>
+                <div class="form-group">
+                    <label for="cost">Custo (€)</label>
+                    <input type="number" id="cost" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="status">Estado</label>
+                    <select id="status">
+                        <option value="completed">Concluída</option>
+                        <option value="pending">Pendente</option>
+                        <option value="cancelled">Cancelada</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-save">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        let maintenanceList = [];
+        let equipmentList = [];
+
+        // Require authentication
+        if (!requireAuth()) {}
+
+        // Display user name
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = 'Bem-vindo, ' + user.username;
+        }
+
+        // Load maintenance and equipment
+        async function loadData() {
+            maintenanceList = await getMaintenance();
+            equipmentList = await getEquipment();
+            renderEquipmentSelect();
+            renderTable();
+        }
+
+        function renderEquipmentSelect() {
+            const select = document.getElementById('equipmentId');
+            select.innerHTML = '<option value="">Selecione um equipamento</option>' +
+                equipmentList.map(eq => `<option value="${eq.id}">${eq.name} (${eq.serial_number})</option>`).join('');
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('maintenanceTable');
+
+            if (maintenanceList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registo de manutenção</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = maintenanceList.map(m => `
+                <tr>
+                    <td>${m.maintenance_date}</td>
+                    <td>${m.equipment_name}</td>
+                    <td>${m.serial_number}</td>
+                    <td>${getTypeLabel(m.maintenance_type)}</td>
+                    <td>${m.description || '-'}</td>
+                    <td>${m.performed_by || '-'}</td>
+                    <td class="cost">${m.cost ? m.cost.toFixed(2) + ' €' : '-'}</td>
+                    <td><span class="status ${m.status}">${getStatusLabel(m.status)}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function getTypeLabel(type) {
+            const labels = {
+                'preventiva': 'Preventiva',
+                'corretiva': 'Corretiva',
+                'preditiva': 'Preditiva',
+                'inspeção': 'Inspeção'
+            };
+            return labels[type] || type;
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'completed': 'Concluída',
+                'pending': 'Pendente',
+                'cancelled': 'Cancelada'
+            };
+            return labels[status] || status;
+        }
+
+        function showAddModal() {
+            document.getElementById('maintenanceForm').reset();
+            document.getElementById('message').className = 'message';
+            document.getElementById('message').style.display = 'none';
+            document.getElementById('maintenanceModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('maintenanceModal').classList.remove('show');
+        }
+
+        // Handle form submission
+        document.getElementById('maintenanceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const maintenance = {
+                equipment_id: parseInt(document.getElementById('equipmentId').value),
+                maintenance_type: document.getElementById('maintenanceType').value,
+                description: document.getElementById('description').value,
+                performed_by: document.getElementById('performedBy').value,
+                next_maintenance_date: document.getElementById('nextMaintenanceDate').value,
+                cost: parseFloat(document.getElementById('cost').value) || null,
+                status: document.getElementById('status').value
+            };
+
+            const result = await createMaintenance(maintenance);
+            const messageDiv = document.getElementById('message');
+
+            if (result.success) {
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'message success';
+                setTimeout(() => {
+                    closeModal();
+                    loadData();
+                }, 1000);
+            } else {
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'message error';
+            }
+        });
+
+        // Close modal on outside click
+        document.getElementById('maintenanceModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Initial load
+        loadData();
+    </script>
+</body>
+</html>

@@ -75,6 +75,10 @@
         .btn-register:hover {
             background: #154360;
         }
+        .btn-register:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
         .success-message {
             background: #27ae60;
             color: white;
@@ -130,7 +134,7 @@
                 <label for="confirmPassword">Confirmar Palavra-passe</label>
                 <input type="password" id="confirmPassword" name="confirmPassword" required>
             </div>
-            <button type="submit" class="btn-register">Criar Conta</button>
+            <button type="submit" class="btn-register" id="registerBtn">Criar Conta</button>
         </form>
         <div class="login-link">
             <a href="index.html">Já tem conta? Iniciar Sessão</a>
@@ -144,7 +148,7 @@
             window.location.href = 'dashboard.html';
         }
 
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const username = document.getElementById('username').value;
@@ -153,6 +157,7 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
             const errorDiv = document.getElementById('errorMessage');
             const successDiv = document.getElementById('successMessage');
+            const registerBtn = document.getElementById('registerBtn');
 
             // Clear previous messages
             errorDiv.style.display = 'none';
@@ -172,8 +177,11 @@
                 return;
             }
 
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'A criar conta...';
+
             // Register user
-            const result = register(username, password, email);
+            const result = await register(username, password, email);
 
             if (result.success) {
                 successDiv.textContent = result.message;
@@ -184,6 +192,8 @@
             } else {
                 errorDiv.textContent = result.message;
                 errorDiv.style.display = 'block';
+                registerBtn.disabled = false;
+                registerBtn.textContent = 'Criar Conta';
             }
         });
     </script>

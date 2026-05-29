@@ -75,6 +75,10 @@
         .btn-login:hover {
             background: #154360;
         }
+        .btn-login:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
         .error-message {
             background: #e74c3c;
             color: white;
@@ -113,7 +117,7 @@
                 <label for="password">Palavra-passe</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit" class="btn-login">Entrar</button>
+            <button type="submit" class="btn-login" id="loginBtn">Entrar</button>
         </form>
         <div class="register-link">
             <a href="register.html">Não tem conta? Registe-se</a>
@@ -127,19 +131,26 @@
             window.location.href = 'dashboard.html';
         }
 
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
+            const loginBtn = document.getElementById('loginBtn');
 
-            const result = login(username, password);
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'A entrar...';
+
+            const result = await login(username, password);
 
             if (result.success) {
                 window.location.href = 'dashboard.html';
             } else {
                 errorDiv.textContent = result.message;
                 errorDiv.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Entrar';
             }
         });
     </script>

@@ -1,101 +1,93 @@
-// Authentication functions using localStorage
+// Authentication functions using backend API
 
-const USERS_KEY = 'norc_manut_users';
-const CURRENT_USER_KEY = 'norc_manut_current_user';
+const API_URL = 'http://localhost:3000/api';
+const TOKEN_KEY = 'norc_manut_token';
+const USER_KEY = 'norc_manut_user';
 
-// Get all users from storage
-function getUsers() {
-    const users = localStorage.getItem(USERS_KEY);
-    return users ? JSON.parse(users) : [];
+// Get token from storage
+function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
 }
 
-// Save users to storage
-function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+// Save token and user to storage
+function saveSession(token, user) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
-// Hash password (simple hash for demo - use proper hashing in production)
-function hashPassword(password) {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-        const char = password.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
+// Register a new user via API
+async function register(username, password, email) {
+    try {
+        const response = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, email })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.error };
+        }
+
+        return { success: true, message: data.message };
+    } catch (error) {
+        return { success: false, message: 'Erro de conexão com o servidor' };
     }
-    return hash.toString(16);
 }
 
-// Register a new user
-function register(username, password, email) {
-    const users = getUsers();
+// Login function via API
+async function login(username, password) {
+    try {
+        const response = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
 
-    // Check if username already exists
-    if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-        return { success: false, message: 'Nome de utilizador já existe' };
-    }
+        const data = await response.json();
 
-    // Check if email already exists
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-        return { success: false, message: 'Email já está registado' };
-    }
+        if (!response.ok) {
+            return { success: false, message: data.error };
+        }
 
-    // Create new user
-    const newUser = {
-        id: Date.now(),
-        username: username,
-        password: hashPassword(password),
-        email: email,
-        createdAt: new Date().toISOString()
-    };
+        // Save session
+        saveSession(data.token, data.user);
 
-    users.push(newUser);
-    saveUsers(users);
-
-    return { success: true, message: 'Conta criada com sucesso' };
-}
-
-// Login function
-function login(username, password) {
-    const users = getUsers();
-    const passwordHash = hashPassword(password);
-
-    const user = users.find(u =>
-        u.username.toLowerCase() === username.toLowerCase() &&
-        u.password === passwordHash
-    );
-
-    if (user) {
-        // Store current user (without password)
-        const sessionUser = {
-            id: user.id,
-            username: user.username,
-            email: user.email
-        };
-        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(sessionUser));
         return { success: true, message: 'Login bem-sucedido' };
+    } catch (error) {
+        return { success: false, message: 'Erro de conexão com o servidor' };
     }
-
-    return { success: false, message: 'Nome de utilizador ou palavra-passe incorretos' };
 }
 
 // Logout function
 function logout() {
-    localStorage.removeItem(CURRENT_USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     window.location.href = 'index.html';
 }
 
 // Check if user is logged in
 function isLoggedIn() {
-    return localStorage.getItem(CURRENT_USER_KEY) !== null;
+    return getToken() !== null;
 }
 
 // Get current logged in user
 function getCurrentUser() {
-    const user = localStorage.getItem(CURRENT_USER_KEY);
+    const user = localStorage.getItem(USER_KEY);
     return user ? JSON.parse(user) : null;
 }
 
-// Protect page - call this on dashboard pages
+// Get auth headers
+function getAuthHeaders() {
+    const token = getToken();
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
+// Protect page - call this on protected pages
 function requireAuth() {
     if (!isLoggedIn()) {
         window.location.href = 'index.html';
@@ -104,51 +96,170 @@ function requireAuth() {
     return true;
 }
 
-// Change password
-function changePassword(oldPassword, newPassword) {
-    const users = getUsers();
-    const currentUser = getCurrentUser();
+// ============ EQUIPMENT API FUNCTIONS ============
 
-    if (!currentUser) {
-        return { success: false, message: 'Nenhum utilizador sessão' };
+// Get all equipment
+async function getEquipment() {
+    try {
+        const response = await fetch(`${API_URL}/equipment`, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            logout();
+            return [];
+        }
+
+        const data = await response.json();
+        return data.equipment || [];
+    } catch (error) {
+        console.error('Error fetching equipment:', error);
+        return [];
     }
-
-    const oldPasswordHash = hashPassword(oldPassword);
-    const userIndex = users.findIndex(u =>
-        u.id === currentUser.id && u.password === oldPasswordHash
-    );
-
-    if (userIndex === -1) {
-        return { success: false, message: 'Palavra-passe atual incorreta' };
-    }
-
-    users[userIndex].password = hashPassword(newPassword);
-    saveUsers(users);
-
-    return { success: true, message: 'Palavra-passe alterada com sucesso' };
 }
 
-// Delete account
-function deleteAccount(password) {
-    const users = getUsers();
-    const currentUser = getCurrentUser();
+// Get single equipment
+async function getEquipmentById(id) {
+    try {
+        const response = await fetch(`${API_URL}/equipment/${id}`, {
+            headers: getAuthHeaders()
+        });
 
-    if (!currentUser) {
-        return { success: false, message: 'Nenhum utilizador em sessão' };
+        const data = await response.json();
+        return data.equipment || null;
+    } catch (error) {
+        console.error('Error fetching equipment:', error);
+        return null;
     }
+}
 
-    const passwordHash = hashPassword(password);
-    const userIndex = users.findIndex(u =>
-        u.id === currentUser.id && u.password === passwordHash
-    );
+// Create equipment
+async function createEquipment(equipment) {
+    try {
+        const response = await fetch(`${API_URL}/equipment`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(equipment)
+        });
 
-    if (userIndex === -1) {
-        return { success: false, message: 'Palavra-passe incorreta' };
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.error };
+        }
+
+        return { success: true, message: data.message };
+    } catch (error) {
+        return { success: false, message: 'Erro de conexão' };
     }
+}
 
-    users.splice(userIndex, 1);
-    saveUsers(users);
-    logout();
+// Update equipment
+async function updateEquipment(id, equipment) {
+    try {
+        const response = await fetch(`${API_URL}/equipment/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(equipment)
+        });
 
-    return { success: true, message: 'Conta eliminada' };
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.error };
+        }
+
+        return { success: true, message: data.message };
+    } catch (error) {
+        return { success: false, message: 'Erro de conexão' };
+    }
+}
+
+// Delete equipment
+async function deleteEquipment(id) {
+    try {
+        const response = await fetch(`${API_URL}/equipment/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.error };
+        }
+
+        return { success: true, message: data.message };
+    } catch (error) {
+        return { success: false, message: 'Erro de conexão' };
+    }
+}
+
+// ============ MAINTENANCE API FUNCTIONS ============
+
+// Get all maintenance records
+async function getMaintenance() {
+    try {
+        const response = await fetch(`${API_URL}/maintenance`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        return data.maintenance || [];
+    } catch (error) {
+        console.error('Error fetching maintenance:', error);
+        return [];
+    }
+}
+
+// Get maintenance for equipment
+async function getEquipmentMaintenance(equipmentId) {
+    try {
+        const response = await fetch(`${API_URL}/equipment/${equipmentId}/maintenance`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        return data.maintenance || [];
+    } catch (error) {
+        console.error('Error fetching maintenance:', error);
+        return [];
+    }
+}
+
+// Create maintenance record
+async function createMaintenance(maintenance) {
+    try {
+        const response = await fetch(`${API_URL}/maintenance`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(maintenance)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.error };
+        }
+
+        return { success: true, message: data.message };
+    } catch (error) {
+        return { success: false, message: 'Erro de conexão' };
+    }
+}
+
+// ============ STATS API FUNCTIONS ============
+
+async function getStats() {
+    try {
+        const response = await fetch(`${API_URL}/stats`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        return data.stats || { totalEquipment: 0, pendingMaintenance: 0, completedMaintenance: 0, alerts: 0 };
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        return { totalEquipment: 0, pendingMaintenance: 0, completedMaintenance: 0, alerts: 0 };
+    }
 }
