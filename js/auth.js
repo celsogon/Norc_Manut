@@ -297,3 +297,30 @@ async function checkImportStatus() {
         return { ready: false };
     }
 }
+
+// Get available columns
+async function getColumns() {
+    try {
+        const response = await fetch(`${API_URL}/columns`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+        return data.columns || [];
+    } catch (error) {
+        console.error('Error fetching columns:', error);
+        return [];
+    }
+}
+
+// Parse extra data for display
+function getExtraDataValue(extraData, key) {
+    if (!extraData) return '';
+    try {
+        const parsed = typeof extraData === 'string' ? JSON.parse(extraData) : extraData;
+        const actualKey = key.replace('extra_', '');
+        return parsed[actualKey] || '';
+    } catch (e) {
+        return '';
+    }
+}

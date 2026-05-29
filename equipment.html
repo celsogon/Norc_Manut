@@ -60,7 +60,7 @@
             background: #c0392b;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 30px auto;
             padding: 0 20px;
         }
@@ -69,9 +69,16 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
         .page-header h2 {
             color: #2c3e50;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
         .btn-add, .btn-import {
             background: #27ae60;
@@ -92,35 +99,129 @@
         .btn-import:hover {
             background: #2980b9;
         }
+        .btn-columns {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-columns:hover {
+            background: #8e44ad;
+        }
+
+        .column-selector {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .column-selector.show {
+            display: flex;
+        }
+        .column-selector-content {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .column-selector-content h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .column-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .column-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .column-item:hover {
+            background: #e9ecef;
+        }
+        .column-item input {
+            width: 18px;
+            height: 18px;
+        }
+        .column-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .column-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-save-columns {
+            background: #1a5276;
+            color: white;
+        }
+        .btn-cancel-columns {
+            background: #95a5a6;
+            color: white;
+        }
+
         .table-container {
             background: white;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
+            overflow-x: auto;
         }
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 800px;
         }
         th {
             background: #2c3e50;
             color: white;
-            padding: 15px;
+            padding: 12px 10px;
             text-align: left;
             font-weight: 500;
+            white-space: nowrap;
+            font-size: 13px;
         }
         td {
-            padding: 15px;
+            padding: 12px 10px;
             border-bottom: 1px solid #eee;
+            font-size: 13px;
+            white-space: nowrap;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         tr:hover {
             background: #f8f9fa;
         }
         .status {
             display: inline-block;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 500;
         }
         .status.active {
@@ -137,14 +238,14 @@
         }
         .actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
         .btn-edit, .btn-delete {
-            padding: 6px 12px;
+            padding: 5px 10px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
         }
         .btn-edit {
             background: #3498db;
@@ -283,7 +384,8 @@
     <div class="container">
         <div class="page-header">
             <h2>Equipamentos</h2>
-            <div style="display: flex; gap: 10px;">
+            <div class="header-buttons">
+                <button class="btn-columns" onclick="showColumnSelector()">Selecionar Colunas</button>
                 <button class="btn-import" onclick="importFromExcel()" id="importBtn">Importar do Excel</button>
                 <button class="btn-add" onclick="showAddModal()">+ Novo Equipamento</button>
             </div>
@@ -291,23 +393,33 @@
 
         <div class="table-container">
             <table>
-                <thead>
+                <thead id="tableHead">
                     <tr>
                         <th>Nome</th>
                         <th>Nº Série</th>
                         <th>Localização</th>
-                        <th>Última Manutenção</th>
-                        <th>Próxima Manutenção</th>
                         <th>Estado</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="equipmentTable">
                     <tr>
-                        <td colspan="7" class="empty-state">A carregar...</td>
+                        <td colspan="5" class="empty-state">A carregar...</td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Column Selector Modal -->
+    <div id="columnSelector" class="column-selector">
+        <div class="column-selector-content">
+            <h3>Selecionar Colunas</h3>
+            <div class="column-list" id="columnList"></div>
+            <div class="column-buttons">
+                <button class="btn-cancel-columns" onclick="closeColumnSelector()">Cancelar</button>
+                <button class="btn-save-columns" onclick="saveColumns()">Guardar</button>
+            </div>
         </div>
     </div>
 
@@ -361,6 +473,14 @@
     <script src="js/auth.js"></script>
     <script>
         let equipmentList = [];
+        let availableColumns = [];
+        let selectedColumns = ['name', 'serial_number', 'location', 'status'];
+
+        // Load saved columns from localStorage
+        const savedColumns = localStorage.getItem('norc_selected_columns');
+        if (savedColumns) {
+            selectedColumns = JSON.parse(savedColumns);
+        }
 
         // Require authentication
         if (!requireAuth()) {}
@@ -371,36 +491,55 @@
             document.getElementById('userName').textContent = 'Bem-vindo, ' + user.username;
         }
 
-        // Load equipment
-        async function loadEquipment() {
+        // Load equipment and columns
+        async function loadData() {
             equipmentList = await getEquipment();
+            availableColumns = await getColumns();
             renderTable();
         }
 
         function renderTable() {
+            const thead = document.getElementById('tableHead');
             const tbody = document.getElementById('equipmentTable');
 
+            // Build header
+            let headerHtml = '';
+            selectedColumns.forEach(colKey => {
+                const col = availableColumns.find(c => c.key === colKey);
+                const label = col ? col.label : colKey;
+                headerHtml += `<th>${label}</th>`;
+            });
+            headerHtml += '<th>Ações</th>';
+            thead.innerHTML = headerHtml;
+
+            // Build body
             if (equipmentList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum equipamento registado</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="${selectedColumns.length + 1}" class="empty-state">Nenhum equipamento registado</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = equipmentList.map(eq => `
-                <tr>
-                    <td>${eq.name}</td>
-                    <td>${eq.serial_number}</td>
-                    <td>${eq.location}</td>
-                    <td>${eq.last_maintenance || '-'}</td>
-                    <td>${eq.next_maintenance || '-'}</td>
-                    <td><span class="status ${eq.status}">${getStatusLabel(eq.status)}</span></td>
+            tbody.innerHTML = equipmentList.map(eq => {
+                let rowHtml = '';
+                selectedColumns.forEach(colKey => {
+                    let value = eq[colKey];
+                    if (colKey.startsWith('extra_')) {
+                        value = getExtraDataValue(eq.extra_data, colKey);
+                    }
+                    if (colKey === 'status') {
+                        value = `<span class="status ${value}">${getStatusLabel(value)}</span>`;
+                    }
+                    rowHtml += `<td>${value || '-'}</td>`;
+                });
+                rowHtml += `
                     <td>
                         <div class="actions">
                             <button class="btn-edit" onclick="editEquipment(${eq.id})">Editar</button>
                             <button class="btn-delete" onclick="deleteEquipment(${eq.id})">Eliminar</button>
                         </div>
                     </td>
-                </tr>
-            `).join('');
+                `;
+                return `<tr>${rowHtml}</tr>`;
+            }).join('');
         }
 
         function getStatusLabel(status) {
@@ -427,12 +566,12 @@
 
             document.getElementById('modalTitle').textContent = 'Editar Equipamento';
             document.getElementById('equipmentId').value = eq.id;
-            document.getElementById('name').value = eq.name;
-            document.getElementById('serialNumber').value = eq.serial_number;
-            document.getElementById('location').value = eq.location;
+            document.getElementById('name').value = eq.name || '';
+            document.getElementById('serialNumber').value = eq.serial_number || '';
+            document.getElementById('location').value = eq.location || '';
             document.getElementById('installationDate').value = eq.installation_date || '';
             document.getElementById('nextMaintenance').value = eq.next_maintenance || '';
-            document.getElementById('status').value = eq.status;
+            document.getElementById('status').value = eq.status || 'active';
             document.getElementById('observations').value = eq.observations || '';
             document.getElementById('message').className = 'message';
             document.getElementById('message').style.display = 'none';
@@ -441,6 +580,30 @@
 
         function closeModal() {
             document.getElementById('equipmentModal').classList.remove('show');
+        }
+
+        // Column selector functions
+        function showColumnSelector() {
+            const list = document.getElementById('columnList');
+            list.innerHTML = availableColumns.map(col => `
+                <label class="column-item">
+                    <input type="checkbox" value="${col.key}" ${selectedColumns.includes(col.key) ? 'checked' : ''}>
+                    ${col.label}
+                </label>
+            `).join('');
+            document.getElementById('columnSelector').classList.add('show');
+        }
+
+        function closeColumnSelector() {
+            document.getElementById('columnSelector').classList.remove('show');
+        }
+
+        function saveColumns() {
+            const checkboxes = document.querySelectorAll('#columnList input:checked');
+            selectedColumns = Array.from(checkboxes).map(cb => cb.value);
+            localStorage.setItem('norc_selected_columns', JSON.stringify(selectedColumns));
+            closeColumnSelector();
+            renderTable();
         }
 
         // Handle form submission
@@ -471,7 +634,7 @@
                 messageDiv.className = 'message success';
                 setTimeout(() => {
                     closeModal();
-                    loadEquipment();
+                    loadData();
                 }, 1000);
             } else {
                 messageDiv.textContent = result.message;
@@ -485,16 +648,11 @@
 
             const result = await deleteEquipment(id);
             if (result.success) {
-                loadEquipment();
+                loadData();
             } else {
                 alert(result.message);
             }
         }
-
-        // Close modal on outside click
-        document.getElementById('equipmentModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
 
         // Import from Excel
         async function importFromExcel() {
@@ -508,7 +666,7 @@
 
             if (result.success) {
                 alert(result.message);
-                loadEquipment();
+                loadData();
             } else {
                 alert('Erro: ' + result.message);
             }
@@ -517,8 +675,17 @@
             importBtn.textContent = 'Importar do Excel';
         }
 
+        // Close modal on outside click
+        document.getElementById('equipmentModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        document.getElementById('columnSelector').addEventListener('click', function(e) {
+            if (e.target === this) closeColumnSelector();
+        });
+
         // Initial load
-        loadEquipment();
+        loadData();
     </script>
 </body>
 </html>

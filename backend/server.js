@@ -55,6 +55,7 @@ function initDatabase() {
                 next_maintenance DATE,
                 status TEXT DEFAULT 'active',
                 observations TEXT,
+                extra_data TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -368,10 +369,14 @@ app.post('/api/import', authenticateToken, (req, res) => {
         let skipped = 0;
         let errors = [];
 
+        // Fields to extract from Excel and store in extra_data
+        const mainFields = ['maquina', 'serie', 'local', 'morada', 'codpost', 'telefone', 'nome', 'marca', 'design', 'situacao', 'instal', 'obs'];
+        const allFields = Object.keys(data[0] || {}).filter(k => !mainFields.includes(k));
+
         // Process in batches
         const stmt = db.prepare(`
-            INSERT OR IGNORE INTO equipment (name, serial_number, location, address, postal_code, phone, client_name, brand, description, status, installation_date, observations)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO equipment (name, serial_number, location, address, postal_code, phone, client_name, brand, description, status, installation_date, observations, extra_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         data.forEach((row, index) => {
@@ -390,8 +395,17 @@ app.post('/api/import', authenticateToken, (req, res) => {
                 const installationDate = excelDateToJSDate(row.instal);
                 const observations = row.obs || '';
 
+                // Store all other fields as JSON
+                const extraData = {};
+                allFields.forEach(field => {
+                    if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
+                        extraData[field] = row[field];
+                    }
+                });
+                const extraDataJSON = JSON.stringify(extraData);
+
                 if (serialNumber && serialNumber.length > 5) {
-                    stmt.run(name, serialNumber, location, address, postalCode, phone, clientName, brand, description, status, installationDate, observations, function(err) {
+                    stmt.run(name, serialNumber, location, address, postalCode, phone, clientName, brand, description, status, installationDate, observations, extraDataJSON, function(err) {
                         if (err) {
                             errors.push(`Row ${index + 2}: ${err.message}`);
                         }
@@ -411,7 +425,8 @@ app.post('/api/import', authenticateToken, (req, res) => {
                 message: `Importação concluída: ${imported} registados, ${skipped} ignorados`,
                 imported,
                 skipped,
-                errors: errors.slice(0, 10)
+                errors: errors.slice(0, 10),
+                availableFields: allFields
             });
         });
     } catch (error) {
@@ -431,6 +446,55 @@ app.get('/api/import/status', authenticateToken, (req, res) => {
     } else {
         res.json({ ready: false });
     }
+});
+
+// Get available columns from imported data
+app.get('/api/columns', authenticateToken, (req, res) => {
+    // Get one sample of extra_data to extract columns
+    db.get('SELECT extra_data FROM equipment WHERE extra_data IS NOT NULL AND extra_data != "{}" LIMIT 1', [], (err, row) => {
+        if (err || !row) {
+            // Return default columns
+            return res.json({
+                columns: [
+                    { key: 'name', label: 'Nome', default: true },
+                    { key: 'serial_number', label: 'Nº Série', default: true },
+                    { key: 'location', label: 'Localização', default: true },
+                    { key: 'client_name', label: 'Cliente', default: true },
+                    { key: 'brand', label: 'Marca', default: true },
+                    { key: 'status', label: 'Estado', default: true },
+                    { key: 'installation_date', label: 'Data Instalação', default: false }
+                ]
+            });
+        }
+
+        try {
+            const extraData = JSON.parse(row.extra_data);
+            const extraColumns = Object.keys(extraData).map(key => ({
+                key: `extra_${key}`,
+                label: key,
+                default: false
+            }));
+
+            res.json({
+                columns: [
+                    { key: 'name', label: 'Nome', default: true },
+                    { key: 'serial_number', label: 'Nº Série', default: true },
+                    { key: 'location', label: 'Localização', default: true },
+                    { key: 'client_name', label: 'Cliente', default: true },
+                    { key: 'brand', label: 'Marca', default: true },
+                    { key: 'status', label: 'Estado', default: true },
+                    { key: 'installation_date', label: 'Data Instalação', default: false },
+                    { key: 'address', label: 'Morada', default: false },
+                    { key: 'postal_code', label: 'Código Postal', default: false },
+                    { key: 'phone', label: 'Telefone', default: false },
+                    { key: 'description', label: 'Descrição', default: false },
+                    ...extraColumns
+                ]
+            });
+        } catch (e) {
+            res.json({ columns: [] });
+        }
+    });
 });
 
 // Start server
