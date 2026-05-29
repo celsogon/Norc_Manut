@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Norc_Manut - Login</title>
+    <title>Norc_Manut - Registo</title>
     <style>
         * {
             margin: 0;
@@ -18,7 +18,7 @@
             align-items: center;
             justify-content: center;
         }
-        .login-container {
+        .register-container {
             background: white;
             padding: 40px;
             border-radius: 10px;
@@ -60,7 +60,7 @@
             outline: none;
             border-color: #1a5276;
         }
-        .btn-login {
+        .btn-register {
             width: 100%;
             padding: 12px;
             background: #1a5276;
@@ -72,8 +72,16 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-        .btn-login:hover {
+        .btn-register:hover {
             background: #154360;
+        }
+        .success-message {
+            background: #27ae60;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
         }
         .error-message {
             background: #e74c3c;
@@ -83,60 +91,96 @@
             margin-bottom: 15px;
             display: none;
         }
-        .forgot-password, .register-link {
+        .login-link {
             text-align: center;
             margin-top: 15px;
         }
-        .forgot-password a, .register-link a {
+        .login-link a {
             color: #1a5276;
             text-decoration: none;
             font-size: 14px;
         }
-        .forgot-password a:hover, .register-link a:hover {
+        .login-link a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
+    <div class="register-container">
         <div class="logo">
             <h1>Norcontrol, Lda</h1>
-            <p>Manutenção de Equipamentos</p>
+            <p>Criar Nova Conta</p>
         </div>
+        <div id="successMessage" class="success-message"></div>
         <div id="errorMessage" class="error-message"></div>
-        <form id="loginForm">
+        <form id="registerForm">
             <div class="form-group">
-                <label for="username">Utilizador</label>
+                <label for="username">Nome de Utilizador</label>
                 <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
-                <label for="password">Palavra-passe</label>
-                <input type="password" id="password" name="password" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
             </div>
-            <button type="submit" class="btn-login">Entrar</button>
+            <div class="form-group">
+                <label for="password">Palavra-passe</label>
+                <input type="password" id="password" name="password" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirmar Palavra-passe</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <button type="submit" class="btn-register">Criar Conta</button>
         </form>
-        <div class="register-link">
-            <a href="register.html">Não tem conta? Registe-se</a>
+        <div class="login-link">
+            <a href="index.html">Já tem conta? Iniciar Sessão</a>
         </div>
     </div>
 
     <script src="js/auth.js"></script>
     <script>
-        // Check if already logged in
+        // Redirect if already logged in
         if (isLoggedIn()) {
             window.location.href = 'dashboard.html';
         }
 
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('errorMessage');
 
-            const result = login(username, password);
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+
+            // Clear previous messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                errorDiv.textContent = 'As palavras-passe não coincidem';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Validate password length
+            if (password.length < 6) {
+                errorDiv.textContent = 'A palavra-passe deve ter pelo menos 6 caracteres';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Register user
+            const result = register(username, password, email);
 
             if (result.success) {
-                window.location.href = 'dashboard.html';
+                successDiv.textContent = result.message;
+                successDiv.style.display = 'block';
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
             } else {
                 errorDiv.textContent = result.message;
                 errorDiv.style.display = 'block';
